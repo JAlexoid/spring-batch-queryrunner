@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:p="http://www.springframework.org/schema/p" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+						http://www.springframework.org/schema/beans/spring-beans.xsd
+						http://www.springframework.org/schema/context 
+						http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+		lazy-init="true">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<jee:jndi-lookup id="dataSource" jndi-name="java:/comp/env/jdbc/db" />
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="useTransactionAwareDataSource" value="true" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.H2Dialect</prop>
+				<prop key="hibernate.session_factory_name">sessionFactory</prop>
+				<prop key="hibernate.query.substitutions">true=1 false=0</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.jdbc.batch_size">100</prop>
+			</props>
+		</property>
+	</bean>
+
+
+	<bean id="sqlExecuteTasklet" class="uk.co.and.batch.common.SQLExecutorTasklet" abstract="true" scope="prototype">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<bean id="hqlExecuteTasklet" class="uk.co.and.batch.common.HQLExecutorTasklet" parent="sqlExecuteTasklet" abstract="true" scope="prototype" />
+
+	<bean id="singleTransactionPerJob" class="uk.co.and.batch.common.OneTransactionJobListener">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="transactionDefinition">
+			<bean
+				class="org.springframework.transaction.support.DefaultTransactionDefinition" />
+		</property>
+		<property name="commitAlways" value="false" />
+	</bean>
+
+</beans>
